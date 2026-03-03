@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #000;
+  color: white;
+  overflow: hidden;
+}
+
+/* Hide scrollbar for the snap container */
+.snap-y {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+}
+.snap-y::-webkit-scrollbar { 
+  display: none; /* WebKit */
+}
+
