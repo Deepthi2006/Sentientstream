@@ -111,22 +111,35 @@ function VideoPlayer({ video }: { video: FeedItem }) {
       // Start watch duration tracking
       watchTimer.current = setInterval(() => {
         watchSeconds.current += 1;
+
+        // Push interactions instantly every 5 seconds continuously to update insights live
+        if (watchSeconds.current % 5 === 0) {
+          api.post('/interactions/', {
+            video_id: video.video_id,
+            watch_duration: 5,
+            is_liked: isLiked,
+            replayed: hasReplayed.current,
+            paused_count: pausedCount.current
+          }).catch(() => { });
+          // By logging chunks of 5s dynamically, we don't have to worry about unmount as much
+          // but we leave watchSeconds continuously growing for local logic if needed
+        }
       }, 1000);
     } else {
       videoRef.current?.pause();
       setIsPlaying(false);
       if (videoRef.current) videoRef.current.currentTime = 0; // reset when scrolled away
-      // Record watch duration when scrolling away
-      if (watchSeconds.current > 0) {
+      // Record leftover watch duration when scrolling away
+      let leftover = watchSeconds.current % 5;
+      if (leftover > 0 && watchSeconds.current > 0) {
         api.post('/interactions/', {
           video_id: video.video_id,
-          watch_duration: watchSeconds.current,
+          watch_duration: leftover,
           is_liked: isLiked,
           replayed: hasReplayed.current,
           paused_count: pausedCount.current
         }).catch(() => { });
 
-        // Reset tracking vars for next potential view
         watchSeconds.current = 0;
         pausedCount.current = 0;
         hasReplayed.current = false;
@@ -136,6 +149,17 @@ function VideoPlayer({ video }: { video: FeedItem }) {
 
     return () => {
       if (watchTimer.current) clearInterval(watchTimer.current);
+      let leftover = watchSeconds.current % 5;
+      if (leftover > 0 && watchSeconds.current > 0) {
+        api.post('/interactions/', {
+          video_id: video.video_id,
+          watch_duration: leftover,
+          is_liked: isLiked,
+          replayed: hasReplayed.current,
+          paused_count: pausedCount.current
+        }).catch(() => { });
+        watchSeconds.current = 0;
+      }
     }
   }, [isInView, video.video_id, isLiked]);
 

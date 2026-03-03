@@ -105,10 +105,8 @@ async def get_feed(
         logger.info(f"🔍 FAISS search: mood={mood} k={k}")
         query_vec = embed_mood_query(mood)
         mood_filter = mood
+        # Strictly search ONLY within the requested mood
         results = store.search(query_vec, k=k, mood_filter=mood_filter, excluded_video_ids=excluded_video_ids)
-
-        if not results:
-            results = store.search(query_vec, k=k, excluded_video_ids=excluded_video_ids)
 
     # ── Diversity Injection ──
     # Mix in ~20-30% random fresh content to avoid repetition
@@ -122,17 +120,13 @@ async def get_feed(
         if meta["video_id"] not in excluded_video_ids and meta["video_id"] not in current_result_vids
     ]
     
-    # If mood filter exists, try keeping diversity within the mood
+    # If mood filter exists, restrict diversity to ONLY this specific mood.
     if mood_filter:
-        mood_candidates = [m for m in candidate_metadata if m.get("mood") == mood_filter]
-        if len(mood_candidates) < num_random_needed:
-            # Fallback to any mood if not enough
-            pass
-        else:
-            candidate_metadata = mood_candidates
+        candidate_metadata = [m for m in candidate_metadata if m.get("mood") == mood_filter]
+        num_random_needed = min(num_random_needed, len(candidate_metadata))
 
-    if candidate_metadata:
-        random_selections = random.sample(candidate_metadata, min(num_random_needed, len(candidate_metadata)))
+    if candidate_metadata and num_random_needed > 0:
+        random_selections = random.sample(candidate_metadata, num_random_needed)
         
         # Determine how many elements to safely remove from bottom
         # Ensures we never pop more items than we actually have
@@ -158,10 +152,11 @@ async def get_feed(
     # To prevent dead-ends, disregard the database exclusions and give them rewatch content!
     if not results:
         logger.warning(f"Feed query resulted in NO content! (likely exhausted). Falling back without exclusions.")
+        # If they asked for a specific mood, ONLY fallback to that mood's rewatch content!
         results = store.search(query_vec, k=k, mood_filter=mood_filter, excluded_video_ids=set())
         
-        # If still empty (e.g. no mood matches completely), just give anything
-        if not results:
+        # Only fallback to absolute randomness if it's Auto mode (mood_filter is None)
+        if not results and not mood_filter:
             results = store.search(query_vec, k=k, excluded_video_ids=set())
     
     # ── Logging ──

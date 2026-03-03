@@ -5,6 +5,8 @@ import Login from './components/Login';
 import Signup from './components/Signup';
 import Home from './components/Home';
 import Feed from './components/Feed';
+import Insights from './components/Insights';
+import WeeklySummary from './components/WeeklySummary';
 
 function App() {
   const { token } = useContext(AuthContext);
@@ -16,6 +18,8 @@ function App() {
       <Route path="/signup" element={token ? <Navigate to="/home" /> : <Signup />} />
       <Route path="/home" element={token ? <Home /> : <Navigate to="/login" />} />
       <Route path="/feed" element={token ? <Feed /> : <Navigate to="/login" />} />
+      <Route path="/insights" element={token ? <Insights /> : <Navigate to="/login" />} />
+      <Route path="/weekly-summary" element={token ? <WeeklySummary /> : <Navigate to="/login" />} />
     </Routes>
   );
 }
