@@ -82,13 +82,15 @@ def embed_mood_query(mood: str) -> np.ndarray:
     import os
     
     if _mood_cache is None:
-        path = "vector_store/data/mood_vectors.json"
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        path = os.path.join(base_dir, "vector_store", "data", "mood_vectors.json")
         if os.path.exists(path):
             with open(path, "r") as f:
                 _mood_cache = json.load(f)
         else:
             _mood_cache = {}
 
+    mood = mood.lower() if mood else "calm"
     if mood in _mood_cache:
         return np.array(_mood_cache[mood], dtype="float32")
         

@@ -16,7 +16,8 @@ from pathlib import Path
 from loguru import logger
 from typing import Optional
 
-DATA_DIR         = "vector_store/data"
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR         = os.path.join(base_dir, "vector_store", "data")
 FAISS_INDEX_PATH = os.path.join(DATA_DIR, "faiss.index")
 FAISS_META_PATH  = os.path.join(DATA_DIR, "faiss_metadata.json")
 EMBEDDING_DIM    = 384
