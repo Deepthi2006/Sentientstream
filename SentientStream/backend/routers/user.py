@@ -129,26 +129,57 @@ async def get_weekly_summary(
     dominant = moods[0].primary_mood
     mood_stats_str = ", ".join([f"{m.primary_mood} ({m.mood_count} videos)" for m in moods])
 
-    try:
-        import os
-        from groq import AsyncGroq
-        import logging
-        
-        client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
-        prompt = f"""You are the SentientStream AI algorithm. Write a highly personalized, slightly sci-fi/cyberpunk style paragraph (3 sentences max) analyzing the user's weekly video viewing habits. 
+    content = "Your emotional vectors are highly blended this week, showing a balanced and diverse watch history."
+
+    import os
+    import json
+    import logging
+    prompt = f"""You are the SentientStream AI algorithm. Write a highly personalized, slightly sci-fi/cyberpunk style paragraph (3 sentences max) analyzing the user's weekly video viewing habits. 
 Their video mood stats are: {mood_stats_str}. Their dominant mood is {dominant}.
 Explain what this means for their current emotional vector or 'neural matrix'. Be insightful, slick, and slightly mysterious as if you are a sentient machine curating their life. Return ONLY the paragraph (no markdown, no quotes, no extra text)."""
-        
-        response = await client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[{"role": "system", "content": prompt}],
-            temperature=0.7,
-            max_tokens=200
-        )
-        content = response.choices[0].message.content.strip().replace('"', '')
+
+    try_groq = True
+
+    # 1. Try AWS Bedrock 
+    try:
+        import boto3
+        session = boto3.Session()
+        if session.get_credentials() is not None:
+            region = os.getenv("AWS_DEFAULT_REGION", session.region_name or "us-east-1")
+            client = session.client('bedrock-runtime', region_name=region)
+            
+            response = client.invoke_model(
+                modelId="anthropic.claude-3-haiku-20240307-v1:0",
+                contentType="application/json",
+                accept="application/json",
+                body=json.dumps({
+                    "anthropic_version": "bedrock-2023-05-31",
+                    "max_tokens": 200,
+                    "temperature": 0.7,
+                    "messages": [{"role": "user", "content": prompt}]
+                })
+            )
+            response_body = json.loads(response.get("body").read())
+            content = response_body.get("content")[0].get("text").strip().replace('"', '')
+            try_groq = False
     except Exception as e:
-        logging.getLogger("uvicorn").error(f"Groq API error for weekly summary: {e}")
-        content = f"Your network displays strong {dominant} tendencies. Your emotional vectors are highly blended this week, showing a balanced and diverse watch history."
+        logging.getLogger("uvicorn").error(f"AWS Bedrock summary failed or not configured: {e}, falling back to Groq")
+
+    # 2. Fallback to Groq
+    if try_groq:
+        try:
+            from groq import AsyncGroq
+            client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
+            response = await client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[{"role": "system", "content": prompt}],
+                temperature=0.7,
+                max_tokens=200
+            )
+            content = response.choices[0].message.content.strip().replace('"', '')
+        except Exception as e:
+            logging.getLogger("uvicorn").error(f"Groq API error for weekly summary: {e}")
+            content = f"Your network displays strong {dominant} tendencies. Your emotional vectors are highly blended this week, showing a balanced and diverse watch history."
 
     return {
         "title": f"Your Weekly Vibe: {dominant.capitalize()}",

@@ -95,17 +95,64 @@ def analyze_video(video_path: str, title: str = "") -> Optional[dict]:
 
     b64_frames = frames_to_base64(frames)
 
-    # Build multimodal message: images first, then the text prompt
+    prompt_text = PROMPT
+    if title:
+        prompt_text = f"Video title for context: {title}\n\n{PROMPT}"
+
+    # Try AWS Bedrock first
+    try:
+        import boto3
+        session = boto3.Session()
+        if session.get_credentials() is not None:
+            region = os.getenv("AWS_DEFAULT_REGION", session.region_name or "us-east-1")
+            bedrock_client = session.client(
+                'bedrock-runtime',
+                region_name=region
+            )
+
+            bedrock_content = []
+            for b64 in b64_frames:
+                bedrock_content.append({
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/jpeg",
+                        "data": b64
+                    }
+                })
+            bedrock_content.append({"type": "text", "text": prompt_text})
+
+            response = bedrock_client.invoke_model(
+                modelId="anthropic.claude-3-haiku-20240307-v1:0",
+                contentType="application/json",
+                accept="application/json",
+                body=json.dumps({
+                    "anthropic_version": "bedrock-2023-05-31",
+                    "max_tokens": 600,
+                    "temperature": 0.1,
+                    "messages": [{"role": "user", "content": bedrock_content}]
+                })
+            )
+            response_body = json.loads(response.get('body').read())
+            raw = response_body.get('content')[0].get('text').strip()
+            
+            result = _extract_json(raw)
+            if result:
+                result["raw_response"] = raw
+                result["model_used"] = "anthropic.claude-3-haiku-20240307-v1:0 (AWS Bedrock)"
+                logger.success(f"  ✅ Mood detected (Bedrock): {result.get('primary_mood')}")
+                return result
+            logger.warning(f"  ⚠️  Bedrock JSON parse failed. Raw: {raw[:200]}")
+    except Exception as exc:
+        logger.warning(f"  ⚠️  AWS Bedrock failed or not configured: {exc}, falling back to Groq...")
+
+    # Fallback to Groq
     content = []
     for b64 in b64_frames:
         content.append({
             "type": "image_url",
             "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
         })
-
-    prompt_text = PROMPT
-    if title:
-        prompt_text = f"Video title for context: {title}\n\n{PROMPT}"
     content.append({"type": "text", "text": prompt_text})
 
     try:
@@ -123,11 +170,11 @@ def analyze_video(video_path: str, title: str = "") -> Optional[dict]:
 
         if result:
             result["raw_response"] = raw
-            result["model_used"]   = model
-            logger.success(f"  ✅ Mood detected: {result.get('primary_mood')}")
+            result["model_used"]   = f"{model} (Groq)"
+            logger.success(f"  ✅ Mood detected (Groq): {result.get('primary_mood')}")
             return result
 
-        logger.warning(f"  ⚠️  JSON parse failed. Raw: {raw[:200]}")
+        logger.warning(f"  ⚠️  Groq JSON parse failed. Raw: {raw[:200]}")
         return None
 
     except Exception as exc:
