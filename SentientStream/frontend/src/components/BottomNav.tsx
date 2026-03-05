@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home as HomeIcon, BarChart3, CalendarDays, BrainCircuit, Database, Share2, PlusSquare } from 'lucide-react';
+import { Home as HomeIcon, BarChart3, CalendarDays, BrainCircuit, Share2, PlusSquare } from 'lucide-react';
 
 export default function BottomNav() {
     const navigate = useNavigate();
@@ -41,13 +41,6 @@ export default function BottomNav() {
             >
                 <BrainCircuit size={18} />
                 <span className="text-[8px] uppercase font-bold tracking-wider">Coach</span>
-            </button>
-            <button
-                onClick={() => navigate('/vault')}
-                className={`flex flex-col items-center gap-1 p-2 transition-colors ${location.pathname === '/vault' ? 'text-pink-500' : 'text-zinc-500 hover:text-zinc-300'}`}
-            >
-                <Database size={18} />
-                <span className="text-[8px] uppercase font-bold tracking-wider">Vault</span>
             </button>
             <button
                 onClick={() => navigate('/nexus')}
