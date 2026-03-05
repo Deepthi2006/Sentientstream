@@ -187,3 +187,181 @@ Explain what this means for their current emotional vector or 'neural matrix'. B
         "dominant_mood": dominant,
         "suggestion": f"Currently optimizing your neural matrix for {dominant} resonance."
     }
+
+@router.get("/ai-coach")
+async def get_ai_coach(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # A generated semantic coaching summary
+    mood_result = await db.execute(
+        select(
+            VideoMood.primary_mood,
+            func.count(Interaction.id).label("mood_count")
+        )
+        .select_from(Interaction)
+        .join(VideoMood, VideoMood.video_id == Interaction.video_id)
+        .where(Interaction.user_id == current_user.id)
+        .group_by(VideoMood.primary_mood)
+        .order_by(desc("mood_count"))
+    )
+    
+    moods = mood_result.all()
+    if not moods:
+        return {
+            "title": "Welcome to the Matrix",
+            "content": "I am your personal AI Coach. To give you elite guidance, I need you to interact with the feed first. Watch some streams, react, and I will analyze your neuro-profile.",
+            "action": "Start watching to unlock your elite AI coaching.",
+            "intensity": 0
+        }
+
+    dominant = moods[0].primary_mood
+    mood_stats_str = ", ".join([f"{m.primary_mood} ({m.mood_count})" for m in moods])
+
+    import os
+    import json
+    import logging
+    prompt = f"""You are an elite, high-performance 'AI Coach' for a user inside an app called SentientStream. 
+Their dominant mood state is currently: {dominant}. Their precise behavioral profile is: {mood_stats_str}.
+Give them an elite, high-contrast, cyberpunk-style tactical breakdown of their current state and actionable advice on how to elevate or utilize their mood right now. Make it powerful, sleek, and motivating (max 3 sentences). Return ONLY the coaching text (no markdown, no greetings)."""
+
+    try_groq = True
+    content = f"Your mental vector is leaning {dominant}. Keep striving, keep pushing boundaries. Maintain focus on the feed to calibrate further."
+
+    # 1. Try AWS Bedrock 
+    try:
+        import boto3
+        session = boto3.Session()
+        if session.get_credentials() is not None:
+            region = os.getenv("AWS_DEFAULT_REGION", session.region_name or "us-east-1")
+            client = session.client('bedrock-runtime', region_name=region)
+            
+            response = client.invoke_model(
+                modelId="anthropic.claude-3-haiku-20240307-v1:0",
+                contentType="application/json",
+                accept="application/json",
+                body=json.dumps({
+                    "anthropic_version": "bedrock-2023-05-31",
+                    "max_tokens": 200,
+                    "temperature": 0.8,
+                    "messages": [{"role": "user", "content": prompt}]
+                })
+            )
+            response_body = json.loads(response.get("body").read())
+            content = response_body.get("content")[0].get("text").strip().replace('"', '')
+            try_groq = False
+    except Exception as e:
+        logging.getLogger("uvicorn").error(f"AWS Bedrock coach failed or not configured: {e}, falling back to Groq")
+
+    # 2. Fallback to Groq
+    if try_groq:
+        try:
+            from groq import AsyncGroq
+            client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
+            response = await client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[{"role": "system", "content": prompt}],
+                temperature=0.8,
+                max_tokens=200
+            )
+            content = response.choices[0].message.content.strip().replace('"', '')
+        except Exception as e:
+            logging.getLogger("uvicorn").error(f"Groq API error for AI Coach: {e}")
+
+    # Map dominant mood to an intensity percentage (visual flare)
+    intensity_map = {
+        "energetic": 95,
+        "sad": 40,
+        "dark": 85,
+        "happy": 80,
+        "calm": 35,
+        "inspirational": 90,
+        "funny": 70,
+        "romantic": 60
+    }
+    intensity = intensity_map.get(dominant, 50)
+
+    return {
+        "title": f"TACTICAL STATE: {dominant.upper()}",
+        "content": content,
+        "action": f"System calibrated. Proceed with {dominant} momentum.",
+        "intensity": intensity
+    }
+
+@router.get("/vault")
+async def get_vault_reconstruction(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Fetch top 3 historically dominant moods to create 'Memory Orbs'
+    mood_result = await db.execute(
+        select(
+            VideoMood.primary_mood,
+            func.count(Interaction.id).label("watch_count")
+        )
+        .select_from(Interaction)
+        .join(VideoMood, VideoMood.video_id == Interaction.video_id)
+        .where(Interaction.user_id == current_user.id)
+        .group_by(VideoMood.primary_mood)
+        .order_by(desc("watch_count"))
+        .limit(3)
+    )
+    
+    top_moods = mood_result.all()
+    if not top_moods:
+        return {"memories": []}
+
+    memories = []
+    for m in top_moods:
+        mood = m.primary_mood
+        
+        # AI Generation for cinematic summary
+        summary = f"A cinematic reconstruction of your neural matrix during the {mood} cycle."
+        
+        import os
+        import json
+        prompt = f"Write a 1-sentence cinematic movie trailer line for a video collection with the mood: {mood}. Make it mysterious and elitist."
+        
+        try:
+            import boto3
+            session = boto3.Session()
+            if session.get_credentials() is not None:
+                region = os.getenv("AWS_DEFAULT_REGION", session.region_name or "us-east-1")
+                client = session.client('bedrock-runtime', region_name=region)
+                response = client.invoke_model(
+                    modelId="anthropic.claude-3-haiku-20240307-v1:0",
+                    contentType="application/json",
+                    accept="application/json",
+                    body=json.dumps({
+                        "anthropic_version": "bedrock-2023-05-31",
+                        "max_tokens": 100,
+                        "temperature": 0.8,
+                        "messages": [{"role": "user", "content": prompt}]
+                    })
+                )
+                response_body = json.loads(response.get("body").read())
+                summary = response_body.get("content")[0].get("text").strip().replace('"', '')
+        except:
+            pass # Fallback to default if AI fails
+
+        memories.append({
+            "mood": mood,
+            "title": f"The {mood.capitalize()} Arc",
+            "summary": summary,
+            "intensity": min(100, m.watch_count * 10)
+        })
+
+    return {"memories": memories}
+
+@router.get("/nexus")
+async def get_nexus_rooms(
+    current_user: User = Depends(get_current_user)
+):
+    # Mocked real-time WebSocket rooms for the demo
+    return {
+        "rooms": [
+            {"id": "zen-garden", "name": "Zen Garden", "mood": "calm", "active_users": 12, "sync_level": 88},
+            {"id": "cyber-rave", "name": "Cyber Rave", "mood": "energetic", "active_users": 42, "sync_level": 94},
+            {"id": "noir-club", "name": "Noir Club", "mood": "dark", "active_users": 8, "sync_level": 72}
+        ]
+    }

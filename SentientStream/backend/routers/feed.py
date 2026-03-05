@@ -70,6 +70,24 @@ async def get_feed(
     query_vec = None
     mood_filter = None
 
+    # ── Chrono-Filter Logic ──
+    # Automatically adjust search priorities based on user's current local time
+    # This doesn't affect explicit mood requests, but shifts the 'Auto' mode or empty mood fallback
+    from datetime import datetime
+    current_hour = datetime.now().hour
+    chrono_mood = None
+    
+    if 6 <= current_hour <= 9:
+        chrono_mood = "inspirational"
+        logger.info(f"⏳ Chrono-Filter Active: Morning mode. Biasing towards {chrono_mood}.")
+    elif current_hour >= 22 or current_hour <= 2:
+        chrono_mood = "calm"
+        logger.info(f"⏳ Chrono-Filter Active: Night mode. Biasing towards {chrono_mood}.")
+
+    if not mood and not mode:
+        mood = chrono_mood
+    # ─────────────────────────
+
     if mode == "auto" and user and user.user_embedding:
         import numpy as np
         logger.info(f"🔍 FAISS search: mode=auto personalized for user {user.id}")

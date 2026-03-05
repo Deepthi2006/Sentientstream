@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, BarChart3, TrendingUp, Clock, PlayCircle, Heart } from 'lucide-react';
 import api from '../api';
+import BottomNav from './BottomNav';
 
 interface InsightsData {
     mood_distribution: { mood: string; watch_time: number }[];
@@ -108,6 +109,8 @@ export default function Insights() {
                     </div>
                 </div>
             )}
+
+            <BottomNav />
         </div>
     );
 }

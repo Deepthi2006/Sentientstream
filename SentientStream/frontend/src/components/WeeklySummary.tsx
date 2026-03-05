@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, CalendarDays, Sparkles, Zap, Brain } from 'lucide-react';
 import api from '../api';
+import BottomNav from './BottomNav';
 
 interface SummaryData {
     title: string;
@@ -87,6 +88,8 @@ export default function WeeklySummary() {
                     </div>
                 </div>
             )}
+
+            <BottomNav />
         </div>
     );
 }

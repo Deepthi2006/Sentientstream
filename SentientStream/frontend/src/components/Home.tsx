@@ -1,7 +1,8 @@
 // src/components/Home.tsx
 import { useState, useContext, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Sparkles, Navigation, UserCircle2, Activity, BarChart3, CalendarDays, Home as HomeIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Sparkles, Navigation, UserCircle2, Activity } from 'lucide-react';
+import BottomNav from './BottomNav';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api';
 
@@ -18,7 +19,6 @@ const MOODS = [
 
 export default function Home() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { logout } = useContext(AuthContext);
   const [currentMood, setCurrentMood] = useState<string | null>(null);
 
@@ -40,7 +40,7 @@ export default function Home() {
   const activeMoodData = MOODS.find(m => m.id === currentMood);
 
   return (
-    <div className="flex flex-col items-center justify-center bg-black text-zinc-100 p-6 relative pb-32">
+    <div className="flex flex-col items-center min-h-screen bg-black text-zinc-100 p-6 pt-16 relative pb-32 overflow-y-auto">
       <button
         onClick={logout}
         className="absolute top-6 right-6 p-2 bg-zinc-900 border border-zinc-800 rounded-full hover:bg-zinc-800 transition"
@@ -107,30 +107,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 w-full max-w-md bg-black/90 backdrop-blur-lg border-t border-zinc-800 pb-safe pt-3 px-6 flex justify-around items-center z-50">
-        <button
-          onClick={() => navigate('/home')}
-          className={`flex flex-col items-center gap-1 p-2 transition-colors ${location.pathname === '/home' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
-        >
-          <HomeIcon size={24} />
-          <span className="text-[10px] uppercase font-bold tracking-wider">Home</span>
-        </button>
-        <button
-          onClick={() => navigate('/insights')}
-          className={`flex flex-col items-center gap-1 p-2 transition-colors ${location.pathname === '/insights' ? 'text-pink-500' : 'text-zinc-500 hover:text-zinc-300'}`}
-        >
-          <BarChart3 size={24} />
-          <span className="text-[10px] uppercase font-bold tracking-wider">Insights</span>
-        </button>
-        <button
-          onClick={() => navigate('/weekly-summary')}
-          className={`flex flex-col items-center gap-1 p-2 transition-colors ${location.pathname === '/weekly-summary' ? 'text-purple-400' : 'text-zinc-500 hover:text-zinc-300'}`}
-        >
-          <CalendarDays size={24} />
-          <span className="text-[10px] uppercase font-bold tracking-wider">Summary</span>
-        </button>
-      </nav>
+      <BottomNav />
     </div>
   );
 }
