@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home as HomeIcon, BarChart3, CalendarDays, BrainCircuit, Database, Share2 } from 'lucide-react';
+import { Home as HomeIcon, BarChart3, CalendarDays, BrainCircuit, Database, Share2, PlusSquare } from 'lucide-react';
 
 export default function BottomNav() {
     const navigate = useNavigate();
@@ -11,8 +11,15 @@ export default function BottomNav() {
                 onClick={() => navigate('/home')}
                 className={`flex flex-col items-center gap-1 p-2 transition-colors ${location.pathname === '/home' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
             >
-                <HomeIcon size={22} />
-                <span className="text-[9px] uppercase font-bold tracking-wider">Home</span>
+                <HomeIcon size={18} />
+                <span className="text-[7px] uppercase font-bold tracking-wider">Home</span>
+            </button>
+            <button
+                onClick={() => navigate('/upload')}
+                className={`flex flex-col items-center gap-1 p-2 transition-colors ${location.pathname === '/upload' ? 'text-green-500' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+                <PlusSquare size={18} />
+                <span className="text-[7px] uppercase font-bold tracking-wider">Upload</span>
             </button>
             <button
                 onClick={() => navigate('/insights')}

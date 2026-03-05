@@ -91,6 +91,9 @@ async def upload_video(
         # 4. Final Indexing
         # Re-run the indexer for un-indexed videos
         await build_faiss_index()
+        
+        from backend.routers.feed import reload_store
+        reload_store()
 
         return {
             "status": "success",

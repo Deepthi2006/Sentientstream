@@ -8,9 +8,10 @@ from database.connection import Base
 class Video(Base):
     __tablename__ = "videos"
 
-    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    pexels_id     = Column(BigInteger, unique=True, nullable=False)
-    title         = Column(Text)
+    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    pexels_id        = Column(BigInteger, unique=True, nullable=True) # Optional for user uploads
+    is_user_upload   = Column(Integer, default=0) # 1 for user uploads
+    title            = Column(Text)
     description   = Column(Text)
     duration      = Column(Integer)           # seconds
     width         = Column(Integer)

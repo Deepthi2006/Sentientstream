@@ -74,7 +74,7 @@ async def build_faiss_index() -> None:
             video.status = "ready"
 
             logger.success(
-                f"  ✅ Indexed: {video.pexels_id} | "
+                f"  ✅ Indexed: {video.pexels_id or 'USER_UPLOAD'} | "
                 f"mood={mood_rec.primary_mood} | faiss_id={faiss_id}"
             )
 

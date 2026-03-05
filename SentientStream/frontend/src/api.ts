@@ -1,7 +1,18 @@
 import axios from 'axios';
 
+const getBaseURL = () => {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:8000';
+    }
+    return `http://${hostname}:8000`;
+  }
+  return 'http://localhost:8000';
+};
+
 const api = axios.create({
-  baseURL: 'http://18.204.214.91:8000',
+  baseURL: getBaseURL(),
 });
 
 api.interceptors.request.use(

@@ -34,6 +34,11 @@ def get_store() -> FAISSStore:
         _store = FAISSStore.load()
     return _store
 
+def reload_store():
+    global _store
+    _store = FAISSStore.load()
+    logger.info("♻️  FAISS Store reloaded")
+
 
 @router.get("/", response_model=list[FeedItem])
 async def get_feed(
@@ -141,7 +146,8 @@ async def get_feed(
     # If mood filter exists, restrict diversity to ONLY this specific mood.
     if mood_filter:
         candidate_metadata = [m for m in candidate_metadata if m.get("mood") == mood_filter]
-        num_random_needed = min(num_random_needed, len(candidate_metadata))
+    
+    num_random_needed = min(num_random_needed, len(candidate_metadata))
 
     if candidate_metadata and num_random_needed > 0:
         random_selections = random.sample(candidate_metadata, num_random_needed)
@@ -203,14 +209,14 @@ async def get_feed(
         )
         videos = {str(v.id): v for v in db_result.scalars().all()}
 
-    base = str(request.base_url)
+    base = str(request.base_url).rstrip('/')
     for r in results:
         vid = videos.get(r["video_id"])
         if not vid:
             continue
         feed_items.append(FeedItem(
             video_id      = vid.id,
-            stream_url    = f"{base}videos/{vid.id}/stream",
+            stream_url    = f"{base}/videos/{vid.id}/stream",
             thumbnail_url = vid.thumbnail_url,
             title         = vid.title,
             duration      = vid.duration,

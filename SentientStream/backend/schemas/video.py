@@ -31,7 +31,7 @@ class VideoMoodOut(BaseModel):
 
 class VideoOut(BaseModel):
     id:            uuid.UUID
-    pexels_id:     int
+    pexels_id:     Optional[int] = None
     title:         Optional[str]
     description:   Optional[str]
     duration:      Optional[int]
