@@ -8,11 +8,27 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from loguru import logger
-
+from fastapi.middleware.cors import CORSMiddleware
 from backend.routers import videos, feed
 
 load_dotenv()
+"""
+app = FastAPI(
+    title="SentientStream API",
+backend/main.py
+────────────────
+FastAPI application entry point for SentientStream.
 
+import os
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+from loguru import logger
+from fastapi.middleware.cors import CORSMiddleware
+from backend.routers import videos, feed
+
+load_dotenv()
+"""
 app = FastAPI(
     title="SentientStream API",
     description="Mood-based video streaming powered by AI 🎬",
@@ -24,6 +40,7 @@ app = FastAPI(
 # CORS — allow frontend dev server
 app.add_middleware(
     CORSMiddleware,
+<<<<<<< HEAD
     allow_origins=[
         "http://localhost:5173", 
         "http://127.0.0.1:5173", 
@@ -31,10 +48,12 @@ app.add_middleware(
         "http://localhost:5174",
         "http://18.204.214.91"
     ],
+=======
+    allow_origins=["http://18.204.214.91"],  # frontend URL
+>>>>>>> cc968d96bfa0b5b5c460e20254f7dddf20efbfce
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
-)
+    allow_headers=["*"],)
 
 # ── Routers ────────────────────────────────────────────────────────────────────
 app.include_router(videos.router)
