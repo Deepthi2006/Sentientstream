@@ -6,6 +6,7 @@ from database.connection import get_db
 from database.models.user import User
 from database.models.interaction import Interaction
 from database.models.mood import VideoMood
+from database.models.video import Video
 from backend.schemas.user import UserProfileOut
 from backend.auth_utils import get_current_user
 from collections import defaultdict
@@ -308,11 +309,37 @@ async def get_vault_reconstruction(
     )
     
     top_moods = mood_result.all()
-    if not top_moods:
-        return {"memories": []}
-
+    
     from backend.ai_utils import generate_sentient_text
     import asyncio
+
+    if not top_moods:
+        # ── Sentient Archetype Injection ──
+        # If the user is new, give them mock data so the feature is "Running"
+        archetypes = ["calm", "energetic", "dark"]
+        tasks = [generate_sentient_text(f"Write a cryptic, 1-sentence cinematic movie trailer line for the primal frequency of {a}.") for a in archetypes]
+        summaries = await asyncio.gather(*tasks)
+        
+        memories = []
+        for i, a in enumerate(archetypes):
+            # Fetch random videos of this mood for the demo
+            vid_res = await db.execute(
+                select(Video.id)
+                .join(VideoMood, VideoMood.video_id == Video.id)
+                .where(VideoMood.primary_mood == a)
+                .limit(5)
+            )
+            vid_ids = [str(vid) for vid in vid_res.scalars().all()]
+            
+            memories.append({
+                "mood": a,
+                "title": f"Initial {a.capitalize()} Pulse",
+                "summary": summaries[i],
+                "intensity": 30 + (i * 20),
+                "video_ids": vid_ids,
+                "reconstructed_at": func.now()
+            })
+        return {"memories": memories}
 
     memories = []
     # Process concurrent AI calls

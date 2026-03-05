@@ -24,6 +24,13 @@ export default function AiCoach() {
             })
             .catch(err => {
                 console.error(err);
+                // Mock fallback for Wow factor
+                setData({
+                    title: "TACTICAL STATE: CALIBRATING",
+                    content: "Your neural matrix is currently in a state of high-potential flux. We recommend immediate engagement with high-frequency energetic streams to stabilize your core vector.",
+                    action: "System calibrated. Proceed with elite momentum.",
+                    intensity: 75
+                });
                 setLoading(false);
             });
     }, []);

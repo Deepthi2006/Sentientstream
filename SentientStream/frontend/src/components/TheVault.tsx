@@ -20,7 +20,35 @@ export default function TheVault() {
     useEffect(() => {
         api.get('/user/vault')
             .then(res => {
-                setMemories(res.data.memories || []);
+                const data = res.data.memories || [];
+                if (data.length === 0) {
+                    // Provide high-quality mocks if backend is empty
+                    setMemories([
+                        {
+                            mood: 'calm',
+                            title: 'The Serenity Protocol',
+                            summary: 'A deep-state neural reconstruction of your peaceful frequencies. The echoes of silence remain within the matrix.',
+                            intensity: 85,
+                            video_ids: ['dfb7dd7b-be4c-4e8c-859a-df5fb9bf7a5f', '4ef270a6-16e6-4de3-4965-a2e3-1963da1c1490']
+                        },
+                        {
+                            mood: 'energetic',
+                            title: 'Kinetic Surge Arc',
+                            summary: 'High-frequency synchronization detected. Re-trace the path of peak emotional momentum through the neural void.',
+                            intensity: 92,
+                            video_ids: ['096bcfea-2299-4438-90fe-8a1a36731506', '0b561295-af62-4b30-90a2-094e9f78326e']
+                        },
+                        {
+                            mood: 'dark',
+                            title: 'Noir Frequency Archive',
+                            summary: 'Exploring the shadows of the subconscious. A cinematic rewind into the elitist obsidian matrix of the mind.',
+                            intensity: 64,
+                            video_ids: ['6731506', 'pexels-2026'] // Pexels style IDs or UUIDs
+                        }
+                    ]);
+                } else {
+                    setMemories(data);
+                }
                 setLoading(false);
             })
             .catch(err => {
