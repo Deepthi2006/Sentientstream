@@ -9,6 +9,7 @@ interface Memory {
     title: string;
     summary: string;
     intensity: number;
+    video_ids: string[];
 }
 
 export default function TheVault() {
@@ -72,7 +73,10 @@ export default function TheVault() {
                                                 <div className="h-full bg-pink-500" style={{ width: `${mem.intensity}%` }} />
                                             </div>
                                         </div>
-                                        <button className="flex items-center gap-2 text-xs font-bold text-zinc-200 bg-zinc-800 px-4 py-2 rounded-lg hover:bg-zinc-700 transition">
+                                        <button
+                                            onClick={() => navigate(`/vault/player?ids=${mem.video_ids.join(',')}&mood=${mem.mood}`)}
+                                            className="flex items-center gap-2 text-xs font-bold text-zinc-200 bg-zinc-800 px-4 py-2 rounded-lg hover:bg-zinc-700 transition"
+                                        >
                                             <PlayCircle size={14} />
                                             Restore
                                         </button>

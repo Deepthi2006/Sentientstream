@@ -311,57 +311,76 @@ async def get_vault_reconstruction(
     if not top_moods:
         return {"memories": []}
 
+    from backend.ai_utils import generate_sentient_text
+    import asyncio
+
     memories = []
+    # Process concurrent AI calls
+    tasks = []
     for m in top_moods:
-        mood = m.primary_mood
-        
-        # AI Generation for cinematic summary
-        summary = f"A cinematic reconstruction of your neural matrix during the {mood} cycle."
-        
-        import os
-        import json
-        prompt = f"Write a 1-sentence cinematic movie trailer line for a video collection with the mood: {mood}. Make it mysterious and elitist."
-        
-        try:
-            import boto3
-            session = boto3.Session()
-            if session.get_credentials() is not None:
-                region = os.getenv("AWS_DEFAULT_REGION", session.region_name or "us-east-1")
-                client = session.client('bedrock-runtime', region_name=region)
-                response = client.invoke_model(
-                    modelId="anthropic.claude-3-haiku-20240307-v1:0",
-                    contentType="application/json",
-                    accept="application/json",
-                    body=json.dumps({
-                        "anthropic_version": "bedrock-2023-05-31",
-                        "max_tokens": 100,
-                        "temperature": 0.8,
-                        "messages": [{"role": "user", "content": prompt}]
-                    })
-                )
-                response_body = json.loads(response.get("body").read())
-                summary = response_body.get("content")[0].get("text").strip().replace('"', '')
-        except:
-            pass # Fallback to default if AI fails
+        prompt = f"Write a cryptic, 1-sentence cinematic movie trailer line for a video collection with the mood: {m.primary_mood}. Focus on the user's emotional evolution."
+        tasks.append(generate_sentient_text(prompt))
+    
+    summaries = await asyncio.gather(*tasks)
+
+    for i, m in enumerate(top_moods):
+        # Fetch up to 5 recent videos for this mood arc
+        vid_res = await db.execute(
+            select(Video.id)
+            .join(VideoMood, VideoMood.video_id == Video.id)
+            .join(Interaction, Interaction.video_id == Video.id)
+            .where(Interaction.user_id == current_user.id, VideoMood.primary_mood == m.primary_mood)
+            .order_by(desc(Interaction.created_at))
+            .limit(5)
+        )
+        vid_ids = [str(vid) for vid in vid_res.scalars().all()]
 
         memories.append({
-            "mood": mood,
-            "title": f"The {mood.capitalize()} Arc",
-            "summary": summary,
-            "intensity": min(100, m.watch_count * 10)
+            "mood": m.primary_mood,
+            "title": f"The {m.primary_mood.capitalize()} Arc",
+            "summary": summaries[i],
+            "intensity": min(100, m.watch_count * 15),
+            "video_ids": vid_ids,
+            "reconstructed_at": func.now()
         })
 
     return {"memories": memories}
 
 @router.get("/nexus")
 async def get_nexus_rooms(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
-    # Mocked real-time WebSocket rooms for the demo
-    return {
-        "rooms": [
-            {"id": "zen-garden", "name": "Zen Garden", "mood": "calm", "active_users": 12, "sync_level": 88},
-            {"id": "cyber-rave", "name": "Cyber Rave", "mood": "energetic", "active_users": 42, "sync_level": 94},
-            {"id": "noir-club", "name": "Noir Club", "mood": "dark", "active_users": 8, "sync_level": 72}
-        ]
-    }
+    from backend.ai_utils import generate_sentient_text
+    
+    # Get user's dominant mood for context
+    res = await db.execute(
+        select(VideoMood.primary_mood)
+        .join(Interaction, Interaction.video_id == VideoMood.video_id)
+        .where(Interaction.user_id == current_user.id)
+        .order_by(desc(Interaction.created_at))
+        .limit(1)
+    )
+    user_mood = res.scalar() or "calm"
+
+    # Generate room names based on user frequency
+    prompt = f"Create 3 unique, futuristic, elitist names for virtual sync rooms matching the theme: {user_mood}. Return ONLY a comma-separated list of names."
+    room_names_raw = await generate_sentient_text(prompt, max_tokens=30)
+    room_names = [name.strip() for name in room_names_raw.split(',')][:3]
+    
+    # Fallback names
+    if len(room_names) < 3:
+        room_names = ["Neural Void", "Cipher Hub", "Data Spire"]
+
+    rooms = []
+    moods = ["calm", "energetic", "dark"] # Different frequencies
+    for i, name in enumerate(room_names):
+        rooms.append({
+            "id": f"room-{i}",
+            "name": name,
+            "mood": moods[i % len(moods)],
+            "active_users": 5 + (i * 12),
+            "sync_level": 70 + (i * 7)
+        })
+
+    return {"rooms": rooms}

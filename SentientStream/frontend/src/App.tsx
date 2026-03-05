@@ -11,6 +11,7 @@ import AiCoach from './components/AiCoach';
 import TheVault from './components/TheVault';
 import NexusSession from './components/NexusSession';
 import UploadVideo from './components/UploadVideo';
+import VaultPlayer from './components/VaultPlayer';
 
 function App() {
   const { token } = useContext(AuthContext);
@@ -29,6 +30,7 @@ function App() {
           <Route path="/ai-coach" element={token ? <AiCoach /> : <Navigate to="/login" />} />
           <Route path="/upload" element={token ? <UploadVideo /> : <Navigate to="/login" />} />
           <Route path="/vault" element={token ? <TheVault /> : <Navigate to="/login" />} />
+          <Route path="/vault/player" element={token ? <VaultPlayer /> : <Navigate to="/login" />} />
           <Route path="/nexus" element={token ? <NexusSession /> : <Navigate to="/login" />} />
         </Routes>
       </div>

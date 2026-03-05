@@ -16,6 +16,15 @@ export default function NexusSession() {
     const navigate = useNavigate();
     const [rooms, setRooms] = useState<Room[]>([]);
     const [loading, setLoading] = useState(true);
+    const [syncingRoom, setSyncingRoom] = useState<string | null>(null);
+
+    const handleSync = (roomId: string) => {
+        setSyncingRoom(roomId);
+        setTimeout(() => {
+            setSyncingRoom(null);
+            alert("Neural Link Established. You are now synchronized with this cluster.");
+        }, 3000);
+    };
 
     useEffect(() => {
         api.get('/user/nexus')
@@ -76,8 +85,12 @@ export default function NexusSession() {
                                     <span className="text-[10px] font-black text-purple-400">{room.sync_level}% SYNC</span>
                                 </div>
 
-                                <button className="w-full mt-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] bg-zinc-900 text-zinc-400 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition">
-                                    Initiate Link
+                                <button
+                                    onClick={() => handleSync(room.id)}
+                                    disabled={syncingRoom !== null}
+                                    className="w-full mt-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] bg-zinc-900 text-zinc-400 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition disabled:opacity-50"
+                                >
+                                    {syncingRoom === room.id ? "Syncing..." : "Initiate Link"}
                                 </button>
                             </div>
                         ))}
