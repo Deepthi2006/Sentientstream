@@ -86,3 +86,5 @@ $RECYCLE.BIN/
 # Backup files
 *.bak
 *.backup
+
+.env
